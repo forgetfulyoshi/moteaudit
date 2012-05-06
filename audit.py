@@ -1,36 +1,42 @@
 import cmd
 import sys
 
-class MoteRegistry(object):
-    def __init__(self):
-        pass
-
-    def summary(self):
-        return "summary placeholder"
-
-    def info(mote_id, field):
-        return "info placeholder"
+from mote import *
 
 class MoteAuditPrompt(cmd.Cmd):
     def __init__(self):
         cmd.Cmd.__init__(self)
         self.prompt = 'moteaudit> '
 
-        self.mote_registry = MoteRegistry()
+        self.mote_registry = MoteRegistry('/dev/ttyUSB1', 57600)
+        self.mote_registry.start()
 
     def do_ls(self, args):
-        """list all known motes"""
-        print self.mote_registry.summary()
-
-    def do_mote(self, args):
         """get details of a mote"""
-        print args
         args = args.split()
-        if len(args) is 2:
-            try:
-                print self.mote_registry.info(args[0], args[1])
-            except Exception:
-                print "didn't work"
+        
+        if len(args) is 0:
+            motes = self.mote_registry.summary()
+            for mote in motes:
+                print str(hex(mote)) + '\t' \
+                      + str(motes[mote]['sent']) + '\t' \
+                      + str(motes[mote]['recv'])
+
+        if len(args) is 1:
+            motes = self.mote_registry.summary()
+            mote = int(args[0])
+            if mote in motes:
+                print str(hex(mote)) + '\t' \
+                      + str(motes[mote]['sent']) + '\t' \
+                      + str(motes[mote]['recv'])
+
+    def do_packets(self, args):
+        if len(args) is 1:
+            mote = int(args[0])
+            pkts = self.mote_registry.packets(mote)
+            
+            for pkt in pkts:
+                print str(pkt) + ') ' + pkts[pkt]
 
     def do_exit(self, args):
         self.quit()
@@ -39,9 +45,11 @@ class MoteAuditPrompt(cmd.Cmd):
         self.quit()
 
     def default(self, line):
-        print "No such command"
+        print "Command not found"
 
     def quit(self):
+        self.mote_registry.is_running = False
+        self.mote_registry.join()
         sys.exit()
 
 if __name__ == '__main__':
