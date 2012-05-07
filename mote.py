@@ -1,4 +1,5 @@
 import threading
+import time
 import tos
 
 class MoteRegistry(threading.Thread):
@@ -6,6 +7,7 @@ class MoteRegistry(threading.Thread):
         threading.Thread.__init__(self)
         
         self.motes = {}
+        self.packets = []
         self.motes_lock = threading.Lock()
         self.port = port
         self.baudrate = baudrate
@@ -17,7 +19,7 @@ class MoteRegistry(threading.Thread):
         active_message = tos.AM(s=serial)
 
         while self.is_running:
-            data = active_message.read()
+            data = active_message.read(timeout=1)
             source = int(data.source)
             dest = int(data.destination)
 
@@ -34,8 +36,8 @@ class MoteRegistry(threading.Thread):
 
                 self.motes[source].num_packets_sent += 1
                 self.motes[dest].num_packets_recv += 1
-                
                 self.motes[source].add_packet(data)
+                self.packets.append((time.time(),  data))
 
     def summary(self):
         with self.motes_lock:
@@ -51,24 +53,19 @@ class MoteRegistry(threading.Thread):
     def info(self, mote_id, field):
         value = None
         mote_id = int(mote_id)
-        
         with self.motes_lock:
             if mote_id not in self.motes:
                 return None
 
             try:
                 value = getattr(self.motes[mote_id], field)
-            except AttributeError as e:
+            except AttributeError:
                 return None
 
             return value
-   
-    def packets(self, mote_id):
-        with self.motes_lock:
-            if mote_id not in self.motes:
-                return {}
-            
-            return self.motes[mote_id].packets
+    
+    def stop(self):
+        self.is_running = False
 
 class Mote(object):
     def __init__(self):

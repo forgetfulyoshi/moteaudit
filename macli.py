@@ -31,12 +31,11 @@ class MoteAuditPrompt(cmd.Cmd):
                       + str(motes[mote]['recv'])
 
     def do_packets(self, args):
-        if len(args) is 1:
-            mote = int(args[0])
-            pkts = self.mote_registry.packets(mote)
+        if len(args) > 1:
+            pkts = self.mote_registry.packets[0:int(args)]
             
             for pkt in pkts:
-                print str(pkt) + ') ' + pkts[pkt]
+                print pkt
 
     def do_exit(self, args):
         self.quit()
