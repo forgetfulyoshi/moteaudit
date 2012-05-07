@@ -6,7 +6,7 @@ import signal
 from mote import *
 
 class WsnSniffer(object):
-    def __init__(self, outfile=''):
+    def __init__(self, outfile='out.ma'):
         self.registry = MoteRegistry('/dev/ttyUSB1', 57600)
         self.outfile = outfile
 
@@ -15,21 +15,34 @@ class WsnSniffer(object):
         print "[+] Capturing, press Ctrl-C to stop."
 
     def _stop(self, signal, frame):
-        print "setting to false"
         self.registry.is_running = False
-        print "joining"
         self.registry.join()
 
-        print 'getting packets'
         packets = self.registry.packets
         
-        print 'opening file'
         with open(self.outfile, 'w') as out:
 
             for packet in packets:
-                out.write(str(packet[0]) + \
-                        tos.list2hex(packet[1].payload()) + \
-                        '\n')
+                timestamp = packet[0]
+                packet = packet[1]
+
+                breakdown = "Destination: %d" + '\n' \
+                            + "Source: %d" + '\n' \
+                            + "Length: %d" + '\n' \
+                            + "Group: %d" + '\n' \
+                            + "Type: %d" + '\n' \
+                            + "Data: %s" 
+
+                breakdown = breakdown % (packet.destination,
+                                   packet.source,
+                                   packet.length,
+                                   packet.group,
+                                   packet.type,
+                                   tos.list2hex(packet.data))
+
+                raw = "%d %s" % (timestamp, tos.list2hex(packet.payload()))
+                
+                out.write(breakdown + '\n' + raw + '\n\n')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Packet sniffer for WSNs')
@@ -39,7 +52,7 @@ if __name__ == '__main__':
     #   - output file(s)
     #   - comm
 
-    sniffer = WsnSniffer('out.mm')
+    sniffer = WsnSniffer()
     sniffer.sniff()
     signal.signal(signal.SIGINT, sniffer._stop)
     signal.pause()
