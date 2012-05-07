@@ -1,4 +1,5 @@
 import cmd
+import signal
 import sys
 
 from mote import *
@@ -46,6 +47,9 @@ class MoteAuditPrompt(cmd.Cmd):
     def default(self, line):
         print "Command not found"
 
+    def catch(self, signal, line):
+        self.quit()
+
     def quit(self):
         self.mote_registry.is_running = False
         self.mote_registry.join()
@@ -53,4 +57,5 @@ class MoteAuditPrompt(cmd.Cmd):
 
 if __name__ == '__main__':
     prompt = MoteAuditPrompt()
+    signal.signal(signal.SIGINT, prompt.sig_test)
     prompt.cmdloop()
