@@ -20,6 +20,8 @@ class MoteRegistry(threading.Thread):
 
         while self.is_running:
             data = active_message.read(timeout=1)
+            if data == None:
+                continue
             source = int(data.source)
             dest = int(data.destination)
 
@@ -64,6 +66,7 @@ class MoteRegistry(threading.Thread):
 
             return value
     
+
     def stop(self):
         self.is_running = False
 
