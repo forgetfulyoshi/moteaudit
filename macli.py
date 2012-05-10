@@ -13,7 +13,7 @@ class MoteAuditPrompt(cmd.Cmd):
         cmd.Cmd.__init__(self)
         self.prompt = 'moteaudit> '
 
-        self.mote_registry = MoteRegistry('/dev/ttyUSB1', 57600)
+        self.mote_registry = MoteRegistry()
         self.mote_registry.start()
 
     def do_ls(self, args):
@@ -56,7 +56,7 @@ class MoteAuditPrompt(cmd.Cmd):
 
         count = args.count.pop()
 
-        pkts = self.mote_registry.packets[:-count]
+        pkts = self.mote_registry.packets[-count:]
         
         for pkt in pkts:
             print pkt

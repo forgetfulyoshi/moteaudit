@@ -3,23 +3,25 @@ import time
 import tos
 
 class MoteRegistry(threading.Thread):
-    def __init__(self, port, baudrate):
+    def __init__(self, serial=None):
         threading.Thread.__init__(self)
         
         self.motes = {}
         self.packets = []
         self.motes_lock = threading.Lock()
-        self.port = port
-        self.baudrate = baudrate
         self.is_running = False
+        
+        try:
+            self.active_message = tos.AM(s=serial)
+        except OSError as e:
+            sys.stderr.write("[-] Cannot open serial connection")
+            sys.stderr.write(str(e))
 
     def run(self):
         self.is_running = True
-        serial = tos.Serial(self.port, self.baudrate)
-        active_message = tos.AM(s=serial)
-
+        packet_count = 0
         while self.is_running:
-            data = active_message.read(timeout=1)
+            data = self.active_message.read(timeout=1)
             if data == None:
                 continue
             source = int(data.source)
@@ -39,7 +41,9 @@ class MoteRegistry(threading.Thread):
                 self.motes[source].num_packets_sent += 1
                 self.motes[dest].num_packets_recv += 1
                 self.motes[source].add_packet(data)
-                self.packets.append((time.time(),  data))
+                self.packets.append((packet_count,  data))
+                
+                packet_count += 1
 
     def summary(self):
         with self.motes_lock:

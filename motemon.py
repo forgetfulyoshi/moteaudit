@@ -7,7 +7,7 @@ from mote import *
 
 class WsnSniffer(object):
     def __init__(self, outfile='out.ma'):
-        self.registry = MoteRegistry('/dev/ttyUSB1', 57600)
+        self.registry = MoteRegistry()
         self.outfile = outfile
 
     def sniff(self):
@@ -42,7 +42,7 @@ class WsnSniffer(object):
 
                 raw = "%d %s" % (timestamp, tos.list2hex(packet.payload()))
                 
-                out.write(breakdown + '\n' + raw + '\n\n')
+                print breakdown + '\n' + raw + '\n\n'
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Packet sniffer for WSNs')
@@ -52,6 +52,8 @@ if __name__ == '__main__':
     #   - output file(s)
     #   - comm
 
+    args = parser.parse_args()
+    
     sniffer = WsnSniffer()
     sniffer.sniff()
     signal.signal(signal.SIGINT, sniffer._stop)
