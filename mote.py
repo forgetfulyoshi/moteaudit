@@ -2,6 +2,22 @@ import threading
 import time
 import tos
 
+class MoteInjector(object):
+    def __init__(self, serial=None):
+        self.am = tos.AM(s=serial)
+
+    def inject(self, source, dest, group, payload):
+        packet = tos.ActiveMessage()
+
+        packet.source = source
+        packet.destination = dest
+        packet.type = 6L
+        packet.group = group
+        packet.data = payload
+        packet.length = len(payload)
+
+        self.am.write(packet, packet.type)
+
 class MoteRegistry(threading.Thread):
     def __init__(self, serial=None):
         threading.Thread.__init__(self)
