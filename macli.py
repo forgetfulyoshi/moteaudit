@@ -13,8 +13,60 @@ class MoteAuditPrompt(cmd.Cmd):
         cmd.Cmd.__init__(self)
         self.prompt = 'moteaudit> '
 
+        self.injector = MoteInjector()
+
         self.mote_registry = MoteRegistry()
         self.mote_registry.start()
+
+    def do_inject(self, args):
+        """send arbitrary data"""
+        parser = argparse.ArgumentParser(description='Send arbitrary data')
+        parser.add_argument('-d', '--dest', type=int, nargs='?', default=0xFFFF,
+                            help="Destination for packet - default is flooding")
+        parser.add_argument('-s', '--src', type=int, nargs='?', default=0,
+                            help="Source of packet - default is zero")
+        parser.add_argument('-g', '--grp', type=int, nargs='?',
+                            default=self.mote_registry.group,
+                            help="Mote group - known groups are: " + str(self.mote_registry.groups))
+        parser.add_argument('payload', type=str, nargs=1,
+                            help="Payload for packet")
+
+        try:
+            args = parser.parse_args(args.split())
+        except SystemExit:
+            return
+
+        print args
+        dest = args.dest
+        source = args.src
+        group = args.grp
+        payload = [int(x) for x in args.payload.pop().split(',')]
+
+        self.injector.inject(source, dest, group, payload)
+
+    def do_replay(self, args):
+        """replay a selected packet"""
+        parser = argparse.ArgumentParser(description='Replay any received packet')
+        parser.add_argument('packet', type=int, nargs=1, 
+                            help="Packet to replay - use ls to see received packets")
+
+        try:
+            args = parser.parse_args(args.split())
+        except SystemExit:
+            return
+
+        packet_id = args.packet.pop()
+        packet = None
+        for (pid, pkt) in self.mote_registry.packets:
+            if pid == packet_id:
+                packet = pkt
+                break
+
+        if packet != None:
+           self.injector.inject(packet.source, packet.destination,
+                                packet.group, packet.data)
+        else:
+            print "[-] Packet not found"
 
     def do_ls(self, args):
         """get details of a mote"""
