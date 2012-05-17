@@ -1,7 +1,6 @@
 #! /usr/bin/python
 
 import argparse
-import signal
 import sys
 
 from mote import *
@@ -15,22 +14,8 @@ class WsnSniffer(object):
         self.registry.start()
         sys.stderr.write("[+] Capturing, press Ctrl-C to stop.\n")
 
-        try:
-            while self.registry.is_running:
-                packets = self.registry.dump()
-                for packet in packets:
-                    print packet
-        except KeyboardInterrupt:
-            self._stop()
-
-    def _stop(self, signal=None, frame=None):
-        self.registry.is_running = False
-        self.registry.join()
-"""
-        packets = self.registry.packets
-        
-        with open(self.outfile, 'w') as out:
-
+        while self.registry.is_running:
+            packets = self.registry.dump()
             for packet in packets:
                 timestamp = packet[0]
                 packet = packet[1]
@@ -52,16 +37,18 @@ class WsnSniffer(object):
                 raw = "%d %s" % (timestamp, tos.list2hex(packet.payload()))
                 
                 print breakdown + '\n' + raw + '\n\n'
-"""
+
+    def stop(self):
+        self.registry.is_running = False
+        self.registry.join()
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Packet sniffer for WSNs')
-    
-    #TODO
-    # Add options
-    #   - output file(s)
-    #   - comm
-
     args = parser.parse_args()
-    
+
     sniffer = WsnSniffer()
-    sniffer.sniff()
+
+    try:
+        sniffer.sniff()
+    except KeyboardInterrupt:
+        sniffer.stop()

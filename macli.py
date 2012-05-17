@@ -3,7 +3,6 @@
 import argparse
 import cmd
 import os
-import signal
 import sys
 
 from mote import *
@@ -191,12 +190,16 @@ class MoteAuditPrompt(cmd.Cmd):
     def default(self, line):
         print "Command not found"
 
-    def quit(self, signal=None, frame=None):
+    def quit(self):
         self.mote_registry.is_running = False
         self.mote_registry.join()
+        self.onecmd('clear')
         sys.exit()
 
 if __name__ == '__main__':
     prompt = MoteAuditPrompt()
-    signal.signal(signal.SIGINT, prompt.quit)
-    prompt.cmdloop()
+
+    try:
+        prompt.cmdloop()
+    except KeyboardInterrupt:
+        prompt.quit()
