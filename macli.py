@@ -25,12 +25,12 @@ class MoteAuditPrompt(cmd.Cmd):
     def do_inject(self, args):
         """send arbitrary data"""
         parser = argparse.ArgumentParser(prog='inject', description='Send arbitrary data')
-        parser.add_argument('-d', '--dest', type=int, nargs=1, default=0xFFFF,
+        parser.add_argument('-d', '--dest', type=int, nargs=1, default=[0xFFFF],
                             help="Destination for packet - default is flooding")
-        parser.add_argument('-s', '--src', type=int, nargs=1, default=0,
+        parser.add_argument('-s', '--src', type=int, nargs=1, default=[0L],
                             help="Source of packet - default is zero")
         parser.add_argument('-g', '--grp', type=int, nargs=1,
-                            default=self.mote_registry.group,
+                            default=[self.mote_registry.group],
                             help="Mote group - use the groups command for a \
                             listing")
         parser.add_argument('payload', type=str, nargs=1,
@@ -43,9 +43,9 @@ class MoteAuditPrompt(cmd.Cmd):
             return
 
         print args
-        dest = args.dest
-        source = args.src
-        group = args.grp
+        dest = args.dest.pop()
+        source = args.src.pop()
+        group = args.grp.pop()
         
         try:
             payload = [int(x) for x in args.payload.pop().split(',')]
