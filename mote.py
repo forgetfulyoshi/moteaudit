@@ -19,7 +19,7 @@ class MoteInjector(object):
         packet.length = len(payload)
         
         with io_lock:
-            self.am.write(packet, packet.type)
+            self.am.write(packet.payload(), packet.type)
 
 class MoteRegistry(threading.Thread):
     def __init__(self, serial=None):
