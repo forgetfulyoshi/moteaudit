@@ -1,12 +1,18 @@
 import threading
 import time
 import tos
+import sys
 
 io_lock = threading.Lock()
 
 class MoteInjector(object):
     def __init__(self, serial=None):
+        temp = sys.stdout
+        sys.stdout = sys.stderr
+        
         self.am = tos.AM(s=serial)
+        
+        sys.stdout = temp
 
     def inject(self, source, dest, group, payload):
         packet = tos.ActiveMessage()
@@ -31,7 +37,12 @@ class MoteRegistry(threading.Thread):
         self.motes_lock = threading.Lock()
         self.is_running = False
         
+        temp = sys.stdout
+        sys.stdout = sys.stderr
+
         self.active_message = tos.AM(s=serial)
+        
+        sys.stdout = temp
 
     def _get_group(self):
         if self.groups:
