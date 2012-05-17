@@ -59,7 +59,7 @@ class MoteRegistry(threading.Thread):
 
             if group not in self.groups:
                 self.groups.append(group)
-
+            
             with self.motes_lock:
                 if source not in self.motes:
                     new_mote = Mote()
@@ -79,6 +79,7 @@ class MoteRegistry(threading.Thread):
                 self.packets.append((packet_count,  data))
                 
                 packet_count += 1
+        return 
 
     def summary(self):
         with self.motes_lock:
@@ -90,6 +91,13 @@ class MoteRegistry(threading.Thread):
                 summary[mote.mote_id]['recv'] = mote.num_packets_recv
                 
             return summary
+
+    def dump(self):
+        with self.motes_lock:
+            temp_packets = self.packets
+            self.packets = []
+
+        return temp_packets
 
     def info(self, mote_id, field):
         value = None

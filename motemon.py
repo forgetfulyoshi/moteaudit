@@ -2,6 +2,7 @@
 
 import argparse
 import signal
+import sys
 
 from mote import *
 
@@ -12,12 +13,20 @@ class WsnSniffer(object):
 
     def sniff(self):
         self.registry.start()
-        print "[+] Capturing, press Ctrl-C to stop."
+        sys.stderr.write("[+] Capturing, press Ctrl-C to stop.\n")
 
-    def _stop(self, signal, frame):
+        try:
+            while self.registry.is_running:
+                packets = self.registry.dump()
+                for packet in packets:
+                    print packet
+        except KeyboardInterrupt:
+            self._stop()
+
+    def _stop(self, signal=None, frame=None):
         self.registry.is_running = False
         self.registry.join()
-
+"""
         packets = self.registry.packets
         
         with open(self.outfile, 'w') as out:
@@ -43,7 +52,7 @@ class WsnSniffer(object):
                 raw = "%d %s" % (timestamp, tos.list2hex(packet.payload()))
                 
                 print breakdown + '\n' + raw + '\n\n'
-
+"""
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Packet sniffer for WSNs')
     
@@ -56,5 +65,3 @@ if __name__ == '__main__':
     
     sniffer = WsnSniffer()
     sniffer.sniff()
-    signal.signal(signal.SIGINT, sniffer._stop)
-    signal.pause()
