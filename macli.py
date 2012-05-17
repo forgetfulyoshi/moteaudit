@@ -11,25 +11,32 @@ from mote import *
 class MoteAuditPrompt(cmd.Cmd):
     def __init__(self):
         cmd.Cmd.__init__(self)
-        self.prompt = 'moteaudit> '
+        self.intro = 'Welcome to the Mote Audit Command Line Interface (MACLI)'
+        self.prompt = 'macli> '
 
         self.injector = MoteInjector()
 
         self.mote_registry = MoteRegistry()
         self.mote_registry.start()
-
+        self.onecmd('clear')
+    
+    def help_inject(self):
+        self.do_inject('-h')
+    
     def do_inject(self, args):
         """send arbitrary data"""
-        parser = argparse.ArgumentParser(description='Send arbitrary data')
-        parser.add_argument('-d', '--dest', type=int, nargs='?', default=0xFFFF,
+        parser = argparse.ArgumentParser(prog='inject', description='Send arbitrary data')
+        parser.add_argument('-d', '--dest', type=int, nargs=1, default=0xFFFF,
                             help="Destination for packet - default is flooding")
-        parser.add_argument('-s', '--src', type=int, nargs='?', default=0,
+        parser.add_argument('-s', '--src', type=int, nargs=1, default=0,
                             help="Source of packet - default is zero")
-        parser.add_argument('-g', '--grp', type=int, nargs='?',
+        parser.add_argument('-g', '--grp', type=int, nargs=1,
                             default=self.mote_registry.group,
-                            help="Mote group - known groups are: " + str(self.mote_registry.groups))
+                            help="Mote group - use the groups command for a \
+                            listing")
         parser.add_argument('payload', type=str, nargs=1,
-                            help="Payload for packet")
+                            help="Payload for packet. Format is single decimal \
+                            values, separated by commas ( e.g. 0,0,1,50 )")
 
         try:
             args = parser.parse_args(args.split())
@@ -40,13 +47,21 @@ class MoteAuditPrompt(cmd.Cmd):
         dest = args.dest
         source = args.src
         group = args.grp
-        payload = [int(x) for x in args.payload.pop().split(',')]
+        
+        try:
+            payload = [int(x) for x in args.payload.pop().split(',')]
+        except ValueError as e:
+            print "Invalid payload format"
+            return
 
         self.injector.inject(source, dest, group, payload)
 
+    def help_replay(self):
+        self.do_replay('-h')
+        
     def do_replay(self, args):
         """replay a selected packet"""
-        parser = argparse.ArgumentParser(description='Replay any received packet')
+        parser = argparse.ArgumentParser(prog='replay', description='Replay any received packet')
         parser.add_argument('packet', type=int, nargs=1, 
                             help="Packet to replay - use ls to see received packets")
 
@@ -68,9 +83,26 @@ class MoteAuditPrompt(cmd.Cmd):
         else:
             print "[-] Packet not found"
 
+    def help_groups(self):
+        self.do_groups('-h')
+
+    def do_groups(self, args):
+        parser = argparse.ArgumentParser(prog='groups', description='List all \
+                                        known groups')
+        try:
+            args = parser.parse_args(args.split())
+        except SystemExit as e:
+            return
+
+        print 'Group ID\n----------'
+        print '\n'.join([str(i) for i in self.mote_registry.groups])
+
+    def help_ls(self):
+        self.do_ls('-h')
+
     def do_ls(self, args):
         """get details of a mote"""
-        parser = argparse.ArgumentParser(description='List all known motes')
+        parser = argparse.ArgumentParser(prog='ls', description='List all known motes')
         parser.add_argument('mote_id', type=int, nargs='?',
                             help='Give information for a specifc mote')
 
@@ -96,8 +128,11 @@ class MoteAuditPrompt(cmd.Cmd):
                       + str(motes[mote]['recv'])
 
 
+    def help_packets(self):
+        self.do_packets('-h')
+
     def do_packets(self, args):
-        parser = argparse.ArgumentParser(description='Get a range of packets')
+        parser = argparse.ArgumentParser(prog='packets', description='Get a range of packets')
         parser.add_argument('count', type=int, nargs=1,
                             help='Return this many of the most recent packets')
 
@@ -113,20 +148,48 @@ class MoteAuditPrompt(cmd.Cmd):
         for pkt in pkts:
             print pkt
 
+    def help_clear(self):
+        self.do_clear('-h')
+
     def do_clear(self, args):
+        
+        parser = argparse.ArgumentParser(prog='clear', description='Clear the screen')
+        
+        try:
+            args = parser.parse_args(args.split())
+        except SystemExit as e:
+            return
+
         os.system('clear')
 
+    def help_exit(self):
+        self.do_exit('-h')
+
     def do_exit(self, args):
+        parser = argparse.ArgumentParser(prog='exit', description='Exit MACLI')
+
+        try:
+            args = parser.parse_args(args.split())
+        except SystemExit as e:
+            return
+
         self.quit()
 
+    def help_quit(self):
+        self.do_quit('-h')
+
     def do_quit(self, args):
+        parser = argparse.ArgumentParser(prog='quit', description='Exit MACLI')
+
+        try:
+            args = parser.parse_args(args.split())
+        except SystemExit as e:
+            return
+        
         self.quit()
 
     def default(self, line):
         print "Command not found"
-
-    def catch(self, signal, line):
-        self.quit()
 
     def quit(self, signal=None, frame=None):
         self.mote_registry.is_running = False
